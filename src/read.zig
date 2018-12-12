@@ -42,7 +42,7 @@ test "read.Reader" {
 }
 
 
-const MemReader = struct {
+pub const MemReader = struct {
     pub const Error = error{};
 
     buffer: []const u8,
