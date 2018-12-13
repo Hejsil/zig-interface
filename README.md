@@ -18,4 +18,5 @@ dispatch. We, therefore, separate the two.
 What do we gain from this?
 
 * It's a lot harder to mess up your interface.
-* When dynamic dispatch isn't used, the optimizer can better optimize your code (TODO: compiler explorer examples)
+* When dynamic dispatch isn't used, the optimizer can better optimize your code ([release-small](https://godbolt.org/z/F2PSS-), [release-fast](https://godbolt.org/z/6XugKd), [release-safe](https://godbolt.org/z/pihtLc))
+* Even when dynamic dispatch is used, the compiler still optimizes better ([release-small](https://godbolt.org/z/NpALLm), [release-fast](https://godbolt.org/z/WR4qHd), [release-safe](https://godbolt.org/z/HkhBGG))
