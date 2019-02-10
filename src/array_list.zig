@@ -1,6 +1,7 @@
 const std = @import("std");
 const mem = @import("index.zig").mem;
 
+const testing = std.testing;
 const debug = std.debug;
 
 pub fn ArrayList(comptime T: type) type {
@@ -132,8 +133,8 @@ test "std.ArrayList.init" {
     var list = ArrayList(i32).init(mem.Allocator.init(fba));
     defer list.deinit();
 
-    debug.assert(list.count() == 0);
-    debug.assert(list.capacity() == 0);
+    testing.expectEqual(usize(0), list.count());
+    testing.expectEqual(usize(0), list.capacity());
 }
 
 test "std.ArrayList.basic" {
@@ -146,14 +147,14 @@ test "std.ArrayList.basic" {
     {
         var i: usize = 0;
         while (i < 10) : (i += 1) {
-            list.append(@intCast(i32, i + 1)) catch unreachable;
+            list.append(@intCast(i32, i + 1)) catch @panic("");
         }
     }
 
     {
         var i: usize = 0;
         while (i < 10) : (i += 1) {
-            debug.assert(list.inner.items[i] == @intCast(i32, i + 1));
+            testing.expectEqual(@intCast(i32, i + 1), list.inner.items[i]);
         }
     }
 }

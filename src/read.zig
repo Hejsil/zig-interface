@@ -1,7 +1,7 @@
 const std = @import("std");
 const mem = @import("mem.zig");
 const vtable = @import("vtable.zig");
-const debug = std.debug;
+const testing = std.testing;
 const read = @This();
 
 pub fn Reader(comptime E: type) type {
@@ -33,12 +33,12 @@ test "read.Reader" {
     var buf: [2]u8 = undefined;
     const mr = &MemReader.init("abc");
     const reader = Reader(MemReader.Error).init(mr);
-    debug.assert(std.mem.eql(u8, try reader.read(buf[0..]), "ab"));
-    debug.assert(mr.i == 2);
-    debug.assert(std.mem.eql(u8, try reader.read(buf[0..]), "c"));
-    debug.assert(mr.i == 3);
-    debug.assert(std.mem.eql(u8, try reader.read(buf[0..]), ""));
-    debug.assert(mr.i == 3);
+    testing.expectEqualSlices(u8, "ab", try reader.read(buf[0..]));
+    testing.expectEqual(usize(2), mr.i);
+    testing.expectEqualSlices(u8, "c", try reader.read(buf[0..]));
+    testing.expectEqual(usize(3), mr.i);
+    testing.expectEqualSlices(u8, "", try reader.read(buf[0..]));
+    testing.expectEqual(usize(3), mr.i);
 }
 
 
@@ -72,12 +72,12 @@ pub const MemReader = struct {
 test "read.MemReader" {
     var buf: [2]u8 = undefined;
     const mr = &MemReader.init("abc");
-    debug.assert(std.mem.eql(u8, try mr.read(buf[0..]), "ab"));
-    debug.assert(mr.i == 2);
-    debug.assert(std.mem.eql(u8, try mr.read(buf[0..]), "c"));
-    debug.assert(mr.i == 3);
-    debug.assert(std.mem.eql(u8, try mr.read(buf[0..]), ""));
-    debug.assert(mr.i == 3);
+    testing.expectEqualSlices(u8, "ab", try mr.read(buf[0..]));
+    testing.expectEqual(usize(2), mr.i);
+    testing.expectEqualSlices(u8, "c", try mr.read(buf[0..]));
+    testing.expectEqual(usize(3), mr.i);
+    testing.expectEqualSlices(u8, "", try mr.read(buf[0..]));
+    testing.expectEqual(usize(3), mr.i);
 }
 
 pub fn byte(reader: var) !u8 {
@@ -91,11 +91,11 @@ pub fn byte(reader: var) !u8 {
 
 test "read.byte" {
     const mr = &MemReader.init("abcd");
-    debug.assert('a' == try read.byte(mr));
-    debug.assert('b' == try read.byte(mr));
-    debug.assert('c' == try read.byte(mr));
-    debug.assert('d' == try read.byte(mr));
-    debug.assertError(read.byte(mr), error.EndOfStream);
+    testing.expectEqual(u8('a'), try read.byte(mr));
+    testing.expectEqual(u8('b'), try read.byte(mr));
+    testing.expectEqual(u8('c'), try read.byte(mr));
+    testing.expectEqual(u8('d'), try read.byte(mr));
+    testing.expectError(error.EndOfStream, read.byte(mr));
 }
 
 pub fn until(reader: var, allocator: var, delim: u8) ![]u8 {
@@ -119,6 +119,6 @@ test "read.until" {
     const mr = &MemReader.init("ab\ncd");
 
     const line = try read.until(mr, allocator, '\n');
-    debug.assert(std.mem.eql(u8, line, "ab\n"));
-    debug.assertError(read.until(mr, allocator, '\n'), error.EndOfStream);
+    testing.expectEqualSlices(u8, "ab\n", line);
+    testing.expectError(error.EndOfStream, read.until(mr, allocator, '\n'));
 }

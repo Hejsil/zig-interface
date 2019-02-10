@@ -1,8 +1,10 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const vtable = @import("vtable.zig");
-const debug = std.debug;
+
+const testing = std.testing;
 const math = std.math;
+const debug = std.debug;
 const mem = @This();
 
 const TypeInfo = builtin.TypeInfo;
@@ -68,20 +70,20 @@ test "mem.Allocator" {
     const allocator = Allocator.init(fba);
 
     var t = try mem.alloc(allocator, u8, 10);
-    debug.assert(t.len == 10);
-    debug.assert(fba.end_index == 10);
+    testing.expectEqual(usize(10), t.len);
+    testing.expectEqual(usize(10), fba.end_index);
 
     t = try mem.realloc(allocator, u8, t, 5);
-    debug.assert(t.len == 5);
-    debug.assert(fba.end_index == 10);
+    testing.expectEqual(usize(5), t.len);
+    testing.expectEqual(usize(10), fba.end_index);
 
     t = try mem.realloc(allocator, u8, t, 20);
-    debug.assert(t.len == 20);
-    debug.assert(fba.end_index == 30);
+    testing.expectEqual(usize(20), t.len);
+    testing.expectEqual(usize(30), fba.end_index);
 
     mem.free(allocator, t);
-    debug.assert(t.len == 20);
-    debug.assert(fba.end_index == 30);
+    testing.expectEqual(usize(20), t.len);
+    testing.expectEqual(usize(30), fba.end_index);
 }
 
 pub const FixedBufferAllocator = struct {
@@ -136,20 +138,20 @@ test "mem.FixedBufferAllocator" {
     const fba = &FixedBufferAllocator.init(buf[0..]);
 
     var t = try fba.alloc(10, 1);
-    debug.assert(t.len == 10);
-    debug.assert(fba.end_index == 10);
+    testing.expectEqual(usize(10), t.len);
+    testing.expectEqual(usize(10), fba.end_index);
 
     t = try fba.realloc(t, 5, 1);
-    debug.assert(t.len == 5);
-    debug.assert(fba.end_index == 10);
+    testing.expectEqual(usize(5), t.len);
+    testing.expectEqual(usize(10), fba.end_index);
 
     t = try fba.realloc(t, 20, 1);
-    debug.assert(t.len == 20);
-    debug.assert(fba.end_index == 30);
+    testing.expectEqual(usize(20), t.len);
+    testing.expectEqual(usize(30), fba.end_index);
 
     fba.free(t);
-    debug.assert(t.len == 20);
-    debug.assert(fba.end_index == 30);
+    testing.expectEqual(usize(20), t.len);
+    testing.expectEqual(usize(30), fba.end_index);
 }
 
 pub fn create(allocator: var, init: var) AllocError!*@typeOf(init) {
@@ -166,8 +168,8 @@ test "mem.create" {
     var buf: [@sizeOf(u16)]u8 = undefined;
     const allocator = &FixedBufferAllocator.init(buf[0..]);
 
-    debug.assert((try mem.create(allocator, u16(99))).* == 99);
-    debug.assertError(mem.create(allocator, u16(100)), error.OutOfMemory);
+    testing.expectEqual(u16(99), (try mem.create(allocator, u16(99))).*);
+    testing.expectError(AllocError.OutOfMemory, mem.create(allocator, u16(100)));
 }
 
 pub fn alloc(allocator: var, comptime T: type, n: usize) AllocError![]T {
@@ -179,8 +181,8 @@ test "mem.alloc" {
     const allocator = &FixedBufferAllocator.init(buf[0..]);
 
     const t = try mem.alloc(allocator, u16, 4);
-    debug.assert(t.len == 4);
-    debug.assertError(mem.alloc(allocator, u16, 1), AllocError.OutOfMemory);
+    testing.expectEqual(usize(4), t.len);
+    testing.expectError(AllocError.OutOfMemory, mem.alloc(allocator, u8, 1));
 }
 
 pub fn alignedAlloc(allocator: var, comptime T: type, comptime alignment: u29, n: usize) AllocError![]align(alignment) T {
@@ -206,12 +208,12 @@ test "mem.realloc" {
     var buf: [@sizeOf(u16) * 4]u8 = undefined;
     const allocator = &FixedBufferAllocator.init(buf[0..]);
 
-    var t = try mem.alloc(allocator, u16, 4);
-    debug.assert(t.len == 4);
+    var t = try mem.alloc(allocator, u8, 4);
+    testing.expectEqual(usize(4), t.len);
 
-    t = try mem.realloc(allocator, u16, t, 2);
-    debug.assert(t.len == 2);
-    debug.assertError(mem.realloc(allocator, u16, t, 5), error.OutOfMemory);
+    t = try mem.realloc(allocator, u8, t, 2);
+    testing.expectEqual(usize(2), t.len);
+    testing.expectError(AllocError.OutOfMemory, mem.realloc(allocator, u8, t, 5));
 }
 
 pub fn alignedRealloc(allocator: var, comptime T: type, comptime alignment: u29, old_mem: []align(alignment) T, n: usize) AllocError![]align(alignment) T {
@@ -247,10 +249,10 @@ test "mem.shrink" {
     const allocator = &FixedBufferAllocator.init(buf[0..]);
 
     var t = try mem.alloc(allocator, u16, 4);
-    debug.assert(t.len == 4);
+    testing.expectEqual(usize(4), t.len);
 
     t = mem.shrink(allocator, u16, t, 2);
-    debug.assert(t.len == 2);
+    testing.expectEqual(usize(2), t.len);
 }
 
 pub fn alignedShrink(allocator: var, comptime T: type, comptime alignment: u29, old_mem: []align(alignment) T, n: usize) []align(alignment) T {
@@ -284,6 +286,6 @@ test "mem.free" {
     const allocator = &FixedBufferAllocator.init(buf[0..]);
 
     var t = try mem.alloc(allocator, u16, 4);
-    debug.assert(t.len == 4);
+    testing.expectEqual(usize(4), t.len);
     mem.free(allocator, t);
 }
