@@ -13,12 +13,14 @@ pub const AllocError = error {OutOfMemory};
 
 pub const Allocator = struct {
     const VTable = struct {
+        pub const Impl = @OpaqueType();
+
         /// Allocate byte_count bytes and return them in a slice, with the
         /// slice's pointer aligned at least to alignment bytes.
         /// The returned newly allocated memory is undefined.
         /// `alignment` is guaranteed to be >= 1
         /// `alignment` is guaranteed to be a power of 2
-        alloc: fn (allocator: *c_void, byte_count: usize, alignment: u29) AllocError![]u8,
+        alloc: fn (allocator: *Impl, byte_count: usize, alignment: u29) AllocError![]u8,
 
         /// If `new_byte_count > old_mem.len`:
         /// * `old_mem.len` is the same as what was returned from allocFn or reallocFn.
@@ -34,20 +36,20 @@ pub const Allocator = struct {
         /// `return_value[old_mem.len..]` have undefined values.
         /// `alignment` is guaranteed to be >= 1
         /// `alignment` is guaranteed to be a power of 2
-        realloc: fn (allocator: *c_void, old_mem: []u8, new_byte_count: usize, alignment: u29) AllocError![]u8,
+        realloc: fn (allocator: *Impl, old_mem: []u8, new_byte_count: usize, alignment: u29) AllocError![]u8,
 
         /// Guaranteed: `old_mem.len` is the same as what was returned from `allocFn` or `reallocFn`
-        free: fn (allocator: *c_void, old_mem: []u8) void,
+        free: fn (allocator: *Impl, old_mem: []u8) void,
     };
 
     vtable: *const VTable,
-    impl: *c_void,
+    impl: *VTable.Impl,
 
     pub fn init(allocator: var) Allocator {
         const T = @typeOf(allocator).Child;
         return Allocator{
             .vtable = comptime vtable.populate(VTable, T, T),
-            .impl = @ptrCast(*c_void, allocator),
+            .impl = @ptrCast(*VTable.Impl, allocator),
         };
     }
 
@@ -55,11 +57,11 @@ pub const Allocator = struct {
         return allocator.vtable.alloc(allocator.impl, n, alignment);
     }
 
-    fn realloc(allocator: Allocator, old_mem: []u8, new_size: usize, alignment: u29) AllocError![]u8 {
+    pub fn realloc(allocator: Allocator, old_mem: []u8, new_size: usize, alignment: u29) AllocError![]u8 {
         return allocator.vtable.realloc(allocator.impl, old_mem, new_size, alignment);
     }
 
-    fn free(allocator: Allocator, bytes: []u8) void {
+    pub fn free(allocator: Allocator, bytes: []u8) void {
         return allocator.vtable.free(allocator.impl, bytes);
     }
 };
@@ -112,7 +114,7 @@ pub const FixedBufferAllocator = struct {
         return result;
     }
 
-    fn realloc(allocator: *FixedBufferAllocator, old_mem: []u8, new_size: usize, alignment: u29) AllocError![]u8 {
+    pub fn realloc(allocator: *FixedBufferAllocator, old_mem: []u8, new_size: usize, alignment: u29) AllocError![]u8 {
         debug.assert(old_mem.len <= allocator.end_index);
         if (new_size <= old_mem.len) {
             return old_mem[0..new_size];
@@ -130,7 +132,7 @@ pub const FixedBufferAllocator = struct {
         }
     }
 
-    fn free(allocator: *FixedBufferAllocator, bytes: []u8) void {}
+    pub fn free(allocator: *FixedBufferAllocator, bytes: []u8) void {}
 };
 
 test "mem.FixedBufferAllocator" {
