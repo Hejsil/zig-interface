@@ -32,8 +32,8 @@ pub fn Reader(comptime E: type) type {
 
 test "read.Reader" {
     var buf: [2]u8 = undefined;
-    const mr = &MemReader.init("abc");
-    const reader = Reader(MemReader.Error).init(mr);
+    var mr = MemReader{ .buffer = "abc" };
+    const reader = Reader(MemReader.Error).init(&mr);
     testing.expectEqualSlices(u8, "ab", try reader.read(buf[0..]));
     testing.expectEqual(usize(2), mr.i);
     testing.expectEqualSlices(u8, "c", try reader.read(buf[0..]));
@@ -70,7 +70,7 @@ pub fn Writer(comptime E: type) type {
 
 test "read.Writer" {
     var buf: [2]u8 = undefined;
-    const mw = &MemWriter.init(buf[0..]);
+    const mw = &MemWriter{ .buffer = buf[0..] };
     const writer = Writer(MemWriter.Error).init(mw);
     testing.expectEqual(usize(1), try writer.write("a"));
     testing.expectEqualSlices(u8, "a", mw.buffer[0..mw.i]);
@@ -115,8 +115,8 @@ pub fn ReadWriter(comptime ReadErr: type, comptime WriteErr: type) type {
 test "read.ReadWriter" {
     var buf: [2]u8 = undefined;
     var buf2: [1]u8 = undefined;
-    const mrw = &MemReadWriter.init(buf[0..]);
-    const rw = ReadWriter(MemReadWriter.Error, MemReadWriter.Error).init(mrw);
+    var mrw = MemReadWriter{ .buffer = buf[0..] };
+    const rw = ReadWriter(MemReadWriter.Error, MemReadWriter.Error).init(&mrw);
     testing.expectEqual(usize(1), try rw.write("a"));
     testing.expectEqualSlices(u8, "a", mrw.notRead());
     testing.expectEqual(usize(1), try rw.write("b"));
@@ -135,14 +135,7 @@ pub const MemReader = struct {
     pub const Error = error{};
 
     buffer: []const u8,
-    i: usize,
-
-    pub fn init(buffer: []const u8) MemReader {
-        return MemReader{
-            .buffer = buffer,
-            .i = 0,
-        };
-    }
+    i: usize = 0,
 
     pub fn read(reader: *MemReader, buf: []u8) Error![]u8 {
         const buffer = reader.rest();
@@ -160,7 +153,7 @@ pub const MemReader = struct {
 
 test "read.MemReader" {
     var buf: [2]u8 = undefined;
-    const mr = &MemReader.init("abc");
+    var mr = MemReader{ .buffer = "abc" };
     testing.expectEqualSlices(u8, "ab", try mr.read(buf[0..]));
     testing.expectEqual(usize(2), mr.i);
     testing.expectEqualSlices(u8, "c", try mr.read(buf[0..]));
@@ -173,14 +166,7 @@ pub const MemWriter = struct {
     pub const Error = error{};
 
     buffer: []u8,
-    i: usize,
-
-    pub fn init(buffer: []u8) MemWriter {
-        return MemWriter{
-            .buffer = buffer,
-            .i = 0,
-        };
-    }
+    i: usize = 0,
 
     pub fn write(writer: *MemWriter, buf: []const u8) Error!usize {
         const buffer = writer.rest();
@@ -197,7 +183,7 @@ pub const MemWriter = struct {
 
 test "read.MemWriter" {
     var buf: [2]u8 = undefined;
-    const mw = &MemWriter.init(buf[0..]);
+    var mw = MemWriter{ .buffer = buf[0..] };
     testing.expectEqual(usize(1), try mw.write("a"));
     testing.expectEqualSlices(u8, "a", mw.buffer[0..mw.i]);
     testing.expectEqual(usize(1), try mw.write("b"));
@@ -210,16 +196,8 @@ pub const MemReadWriter = struct {
     pub const Error = error{};
 
     buffer: []u8,
-    start: usize,
-    end: usize,
-
-    pub fn init(buffer: []u8) MemReadWriter {
-        return MemReadWriter{
-            .buffer = buffer,
-            .start = 0,
-            .end = 0,
-        };
-    }
+    start: usize = 0,
+    end: usize = 0,
 
     pub fn write(mrw: *MemReadWriter, buf: []const u8) Error!usize {
         const buffer = mrw.notWritten();
@@ -250,7 +228,7 @@ pub const MemReadWriter = struct {
 test "read.MemReadWriter" {
     var buf: [2]u8 = undefined;
     var buf2: [1]u8 = undefined;
-    const mrw = &MemReadWriter.init(buf[0..]);
+    var mrw = MemReadWriter{ .buffer = buf[0..] };
     testing.expectEqual(usize(1), try mrw.write("a"));
     testing.expectEqualSlices(u8, "a", mrw.notRead());
     testing.expectEqual(usize(1), try mrw.write("b"));
@@ -275,12 +253,12 @@ pub fn byte(reader: var) !u8 {
 }
 
 test "read.byte" {
-    const mr = &MemReader.init("abcd");
-    testing.expectEqual(u8('a'), try read.byte(mr));
-    testing.expectEqual(u8('b'), try read.byte(mr));
-    testing.expectEqual(u8('c'), try read.byte(mr));
-    testing.expectEqual(u8('d'), try read.byte(mr));
-    testing.expectError(error.EndOfStream, read.byte(mr));
+    var mr = MemReader{ .buffer = "abcd" };
+    testing.expectEqual(u8('a'), try read.byte(&mr));
+    testing.expectEqual(u8('b'), try read.byte(&mr));
+    testing.expectEqual(u8('c'), try read.byte(&mr));
+    testing.expectEqual(u8('d'), try read.byte(&mr));
+    testing.expectError(error.EndOfStream, read.byte(&mr));
 }
 
 pub fn until(reader: var, allocator: var, delim: u8) ![]u8 {
@@ -300,10 +278,10 @@ pub fn until(reader: var, allocator: var, delim: u8) ![]u8 {
 
 test "read.until" {
     var buf: [32]u8 = undefined;
-    const allocator = &mem.FixedBufferAllocator.init(buf[0..]);
-    const mr = &MemReader.init("ab\ncd");
+    var fba = mem.FixedBufferAllocator{ .buffer = buf[0..] };
+    var mr = MemReader{ .buffer = "ab\ncd" };
 
-    const line = try read.until(mr, allocator, '\n');
+    const line = try read.until(&mr, &fba, '\n');
     testing.expectEqualSlices(u8, "ab\n", line);
-    testing.expectError(error.EndOfStream, read.until(mr, allocator, '\n'));
+    testing.expectError(error.EndOfStream, read.until(&mr, &fba, '\n'));
 }

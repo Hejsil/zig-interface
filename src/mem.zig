@@ -68,8 +68,8 @@ pub const Allocator = struct {
 
 test "mem.Allocator" {
     var buf: [1024]u8 = undefined;
-    const fba = &FixedBufferAllocator.init(buf[0..]);
-    const allocator = Allocator.init(fba);
+    var fba = FixedBufferAllocator{ .buffer = buf[0..] };
+    const allocator = Allocator.init(&fba);
 
     var t = try mem.alloc(allocator, u8, 10);
     testing.expectEqual(usize(10), t.len);
@@ -90,14 +90,7 @@ test "mem.Allocator" {
 
 pub const FixedBufferAllocator = struct {
     buffer: []u8,
-    end_index: usize,
-
-    pub fn init(buffer: []u8) FixedBufferAllocator {
-        return FixedBufferAllocator{
-            .buffer = buffer,
-            .end_index = 0,
-        };
-    }
+    end_index: usize = 0,
 
     pub fn alloc(allocator: *FixedBufferAllocator, n: usize, alignment: u29) AllocError![]u8 {
         const addr = @ptrToInt(allocator.buffer.ptr) + allocator.end_index;
@@ -137,7 +130,7 @@ pub const FixedBufferAllocator = struct {
 
 test "mem.FixedBufferAllocator" {
     var buf: [1024]u8 = undefined;
-    const fba = &FixedBufferAllocator.init(buf[0..]);
+    var fba = FixedBufferAllocator{ .buffer = buf[0..] };
 
     var t = try fba.alloc(10, 1);
     testing.expectEqual(usize(10), t.len);
@@ -168,10 +161,10 @@ pub fn create(allocator: var, init: var) AllocError!*@typeOf(init) {
 
 test "mem.create" {
     var buf: [@sizeOf(u16)]u8 = undefined;
-    const allocator = &FixedBufferAllocator.init(buf[0..]);
+    var fba = FixedBufferAllocator{ .buffer = buf[0..] };
 
-    testing.expectEqual(u16(99), (try mem.create(allocator, u16(99))).*);
-    testing.expectError(AllocError.OutOfMemory, mem.create(allocator, u16(100)));
+    testing.expectEqual(u16(99), (try mem.create(&fba, u16(99))).*);
+    testing.expectError(AllocError.OutOfMemory, mem.create(&fba, u16(100)));
 }
 
 pub fn alloc(allocator: var, comptime T: type, n: usize) AllocError![]T {
@@ -180,11 +173,11 @@ pub fn alloc(allocator: var, comptime T: type, n: usize) AllocError![]T {
 
 test "mem.alloc" {
     var buf: [@sizeOf(u16) * 4]u8 = undefined;
-    const allocator = &FixedBufferAllocator.init(buf[0..]);
+    var fba = FixedBufferAllocator{ .buffer = buf[0..] };
 
-    const t = try mem.alloc(allocator, u16, 4);
+    const t = try mem.alloc(&fba, u16, 4);
     testing.expectEqual(usize(4), t.len);
-    testing.expectError(AllocError.OutOfMemory, mem.alloc(allocator, u8, 1));
+    testing.expectError(AllocError.OutOfMemory, mem.alloc(&fba, u8, 1));
 }
 
 pub fn alignedAlloc(allocator: var, comptime T: type, comptime alignment: u29, n: usize) AllocError![]align(alignment) T {
@@ -208,14 +201,14 @@ pub fn realloc(allocator: var, comptime T: type, old_mem: []T, n: usize) AllocEr
 
 test "mem.realloc" {
     var buf: [@sizeOf(u16) * 4]u8 = undefined;
-    const allocator = &FixedBufferAllocator.init(buf[0..]);
+    var fba = FixedBufferAllocator{ .buffer = buf[0..] };
 
-    var t = try mem.alloc(allocator, u8, 4);
+    var t = try mem.alloc(&fba, u8, 4);
     testing.expectEqual(usize(4), t.len);
 
-    t = try mem.realloc(allocator, u8, t, 2);
+    t = try mem.realloc(&fba, u8, t, 2);
     testing.expectEqual(usize(2), t.len);
-    testing.expectError(AllocError.OutOfMemory, mem.realloc(allocator, u8, t, 5));
+    testing.expectError(AllocError.OutOfMemory, mem.realloc(&fba, u8, t, 5));
 }
 
 pub fn alignedRealloc(allocator: var, comptime T: type, comptime alignment: u29, old_mem: []align(alignment) T, n: usize) AllocError![]align(alignment) T {
@@ -248,12 +241,12 @@ pub fn shrink(allocator: var, comptime T: type, old_mem: []T, n: usize) []T {
 
 test "mem.shrink" {
     var buf: [@sizeOf(u16) * 4]u8 = undefined;
-    const allocator = &FixedBufferAllocator.init(buf[0..]);
+    var fba = FixedBufferAllocator{ .buffer = buf[0..] };
 
-    var t = try mem.alloc(allocator, u16, 4);
+    var t = try mem.alloc(&fba, u16, 4);
     testing.expectEqual(usize(4), t.len);
 
-    t = mem.shrink(allocator, u16, t, 2);
+    t = mem.shrink(&fba, u16, t, 2);
     testing.expectEqual(usize(2), t.len);
 }
 
@@ -285,9 +278,9 @@ pub fn free(allocator: var, memory: var) void {
 
 test "mem.free" {
     var buf: [@sizeOf(u16) * 4]u8 = undefined;
-    const allocator = &FixedBufferAllocator.init(buf[0..]);
+    var fba = FixedBufferAllocator{ .buffer = buf[0..] };
 
-    var t = try mem.alloc(allocator, u16, 4);
+    var t = try mem.alloc(&fba, u16, 4);
     testing.expectEqual(usize(4), t.len);
-    mem.free(allocator, t);
+    mem.free(&fba, t);
 }

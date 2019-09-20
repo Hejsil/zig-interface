@@ -34,8 +34,6 @@ pub fn populate(comptime VTable: type, comptime Functions: type, comptime T: typ
                 debug.assert(!Expect.is_generic);
                 debug.assert(!Expect.is_var_args);
                 debug.assert(Expect.args.len > 0);
-                debug.assert(Expect.async_allocator_type == null);
-                debug.assert(Actual.async_allocator_type == null);
                 debug.assert(Expect.calling_convention == Actual.calling_convention);
                 debug.assert(Expect.is_generic == Actual.is_generic);
                 debug.assert(Expect.is_var_args == Actual.is_var_args);

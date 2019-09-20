@@ -22,15 +22,8 @@ pub fn AlignedArrayListCustomAllocator(comptime Allocator: type, comptime T: typ
         const Self = @This();
         const Inner = AlignedArrayListNoAllocator(T, A);
 
-        inner: Inner,
+        inner: Inner = Inner{},
         allocator: Allocator,
-
-        pub fn init(allocator: Allocator) Self {
-            return Self{
-                .inner = Inner.init(),
-                .allocator = allocator,
-            };
-        }
 
         pub fn deinit(self: *Self) void {
             self.inner.deinit(self.allocator);
@@ -70,15 +63,8 @@ pub fn AlignedArrayListNoAllocator(comptime T: type, comptime A: u29) type {
     return struct {
         const Self = @This();
 
-        items: []align(A) T,
-        len: usize,
-
-        pub fn init() Self {
-            return Self{
-                .items = []align(A) T{},
-                .len = 0,
-            };
-        }
+        items: []align(A) T = [_]T{},
+        len: usize = 0,
 
         pub fn deinit(self: *Self, allocator: var) void {
             mem.free(allocator, self.items);
@@ -128,9 +114,9 @@ pub fn AlignedArrayListNoAllocator(comptime T: type, comptime A: u29) type {
 
 test "std.ArrayList.init" {
     var bytes: [1024]u8 = undefined;
-    const fba = &mem.FixedBufferAllocator.init(bytes[0..]);
+    var fba = mem.FixedBufferAllocator{ .buffer = bytes[0..] };
 
-    var list = ArrayList(i32).init(mem.Allocator.init(fba));
+    var list = ArrayList(i32){ .allocator = mem.Allocator.init(&fba) };
     defer list.deinit();
 
     testing.expectEqual(usize(0), list.count());
@@ -139,9 +125,9 @@ test "std.ArrayList.init" {
 
 test "std.ArrayList.basic" {
     var bytes: [1024]u8 = undefined;
-    const fba = &mem.FixedBufferAllocator.init(bytes[0..]);
+    var fba = mem.FixedBufferAllocator{ .buffer = bytes[0..] };
 
-    var list = ArrayList(i32).init(mem.Allocator.init(fba));
+    var list = ArrayList(i32){ .allocator = mem.Allocator.init(&fba) };
     defer list.deinit();
 
     {
