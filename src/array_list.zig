@@ -1,5 +1,5 @@
 const std = @import("std");
-const mem = @import("index.zig").mem;
+const mem = @import("../std.zig").mem;
 
 const testing = std.testing;
 const debug = std.debug;
@@ -11,7 +11,6 @@ pub fn ArrayList(comptime T: type) type {
 pub fn AlignedArrayList(comptime T: type, comptime A: u29) type {
     return AlignedArrayListCustomAllocator(mem.Allocator, T, A);
 }
-
 
 pub fn ArrayListCustomAllocator(comptime Allocator: type, comptime T: type) type {
     return AlignedArrayListCustomAllocator(Allocator, T, @alignOf(T));
@@ -63,7 +62,7 @@ pub fn AlignedArrayListNoAllocator(comptime T: type, comptime A: u29) type {
     return struct {
         const Self = @This();
 
-        items: []align(A) T = [_]T{},
+        items: []align(A) T = &[_]T{},
         len: usize = 0,
 
         pub fn deinit(self: *Self, allocator: var) void {
@@ -111,7 +110,6 @@ pub fn AlignedArrayListNoAllocator(comptime T: type, comptime A: u29) type {
     };
 }
 
-
 test "std.ArrayList.init" {
     var bytes: [1024]u8 = undefined;
     var fba = mem.FixedBufferAllocator{ .buffer = bytes[0..] };
@@ -119,8 +117,8 @@ test "std.ArrayList.init" {
     var list = ArrayList(i32){ .allocator = mem.Allocator.init(&fba) };
     defer list.deinit();
 
-    testing.expectEqual(usize(0), list.count());
-    testing.expectEqual(usize(0), list.capacity());
+    testing.expectEqual(@as(usize, 0), list.count());
+    testing.expectEqual(@as(usize, 0), list.capacity());
 }
 
 test "std.ArrayList.basic" {

@@ -17,7 +17,7 @@ pub fn Reader(comptime E: type) type {
         impl: *VTable.Impl,
 
         pub fn init(reader: var) @This() {
-            const T = @typeOf(reader).Child;
+            const T = @TypeOf(reader).Child;
             return @This(){
                 .vtable = comptime vtable.populate(VTable, T, T),
                 .impl = @ptrCast(*VTable.Impl, reader),
@@ -35,11 +35,11 @@ test "read.Reader" {
     var mr = MemReader{ .buffer = "abc" };
     const reader = Reader(MemReader.Error).init(&mr);
     testing.expectEqualSlices(u8, "ab", try reader.read(buf[0..]));
-    testing.expectEqual(usize(2), mr.i);
+    testing.expectEqual(@as(usize, 2), mr.i);
     testing.expectEqualSlices(u8, "c", try reader.read(buf[0..]));
-    testing.expectEqual(usize(3), mr.i);
+    testing.expectEqual(@as(usize, 3), mr.i);
     testing.expectEqualSlices(u8, "", try reader.read(buf[0..]));
-    testing.expectEqual(usize(3), mr.i);
+    testing.expectEqual(@as(usize, 3), mr.i);
 }
 
 pub fn Writer(comptime E: type) type {
@@ -55,7 +55,7 @@ pub fn Writer(comptime E: type) type {
         impl: *VTable.Impl,
 
         pub fn init(writer: var) @This() {
-            const T = @typeOf(writer).Child;
+            const T = @TypeOf(writer).Child;
             return @This(){
                 .vtable = comptime vtable.populate(VTable, T, T),
                 .impl = @ptrCast(*VTable.Impl, writer),
@@ -72,11 +72,11 @@ test "read.Writer" {
     var buf: [2]u8 = undefined;
     const mw = &MemWriter{ .buffer = buf[0..] };
     const writer = Writer(MemWriter.Error).init(mw);
-    testing.expectEqual(usize(1), try writer.write("a"));
+    testing.expectEqual(@as(usize, 1), try writer.write("a"));
     testing.expectEqualSlices(u8, "a", mw.buffer[0..mw.i]);
-    testing.expectEqual(usize(1), try writer.write("b"));
+    testing.expectEqual(@as(usize, 1), try writer.write("b"));
     testing.expectEqualSlices(u8, "ab", mw.buffer[0..mw.i]);
-    testing.expectEqual(usize(0), try writer.write("c"));
+    testing.expectEqual(@as(usize, 0), try writer.write("c"));
     testing.expectEqualSlices(u8, "ab", mw.buffer[0..mw.i]);
 }
 
@@ -95,7 +95,7 @@ pub fn ReadWriter(comptime ReadErr: type, comptime WriteErr: type) type {
         impl: *VTable.Impl,
 
         pub fn init(rw: var) @This() {
-            const T = @typeOf(rw).Child;
+            const T = @TypeOf(rw).Child;
             return @This(){
                 .vtable = comptime vtable.populate(VTable, T, T),
                 .impl = @ptrCast(*VTable.Impl, rw),
@@ -117,11 +117,11 @@ test "read.ReadWriter" {
     var buf2: [1]u8 = undefined;
     var mrw = MemReadWriter{ .buffer = buf[0..] };
     const rw = ReadWriter(MemReadWriter.Error, MemReadWriter.Error).init(&mrw);
-    testing.expectEqual(usize(1), try rw.write("a"));
+    testing.expectEqual(@as(usize, 1), try rw.write("a"));
     testing.expectEqualSlices(u8, "a", mrw.notRead());
-    testing.expectEqual(usize(1), try rw.write("b"));
+    testing.expectEqual(@as(usize, 1), try rw.write("b"));
     testing.expectEqualSlices(u8, "ab", mrw.notRead());
-    testing.expectEqual(usize(0), try rw.write("c"));
+    testing.expectEqual(@as(usize, 0), try rw.write("c"));
     testing.expectEqualSlices(u8, "ab", mrw.notRead());
 
     testing.expectEqualSlices(u8, "a", try rw.read(buf2[0..]));
@@ -155,11 +155,11 @@ test "read.MemReader" {
     var buf: [2]u8 = undefined;
     var mr = MemReader{ .buffer = "abc" };
     testing.expectEqualSlices(u8, "ab", try mr.read(buf[0..]));
-    testing.expectEqual(usize(2), mr.i);
+    testing.expectEqual(@as(usize, 2), mr.i);
     testing.expectEqualSlices(u8, "c", try mr.read(buf[0..]));
-    testing.expectEqual(usize(3), mr.i);
+    testing.expectEqual(@as(usize, 3), mr.i);
     testing.expectEqualSlices(u8, "", try mr.read(buf[0..]));
-    testing.expectEqual(usize(3), mr.i);
+    testing.expectEqual(@as(usize, 3), mr.i);
 }
 
 pub const MemWriter = struct {
@@ -184,11 +184,11 @@ pub const MemWriter = struct {
 test "read.MemWriter" {
     var buf: [2]u8 = undefined;
     var mw = MemWriter{ .buffer = buf[0..] };
-    testing.expectEqual(usize(1), try mw.write("a"));
+    testing.expectEqual(@as(usize, 1), try mw.write("a"));
     testing.expectEqualSlices(u8, "a", mw.buffer[0..mw.i]);
-    testing.expectEqual(usize(1), try mw.write("b"));
+    testing.expectEqual(@as(usize, 1), try mw.write("b"));
     testing.expectEqualSlices(u8, "ab", mw.buffer[0..mw.i]);
-    testing.expectEqual(usize(0), try mw.write("c"));
+    testing.expectEqual(@as(usize, 0), try mw.write("c"));
     testing.expectEqualSlices(u8, "ab", mw.buffer[0..mw.i]);
 }
 
@@ -229,11 +229,11 @@ test "read.MemReadWriter" {
     var buf: [2]u8 = undefined;
     var buf2: [1]u8 = undefined;
     var mrw = MemReadWriter{ .buffer = buf[0..] };
-    testing.expectEqual(usize(1), try mrw.write("a"));
+    testing.expectEqual(@as(usize, 1), try mrw.write("a"));
     testing.expectEqualSlices(u8, "a", mrw.notRead());
-    testing.expectEqual(usize(1), try mrw.write("b"));
+    testing.expectEqual(@as(usize, 1), try mrw.write("b"));
     testing.expectEqualSlices(u8, "ab", mrw.notRead());
-    testing.expectEqual(usize(0), try mrw.write("c"));
+    testing.expectEqual(@as(usize, 0), try mrw.write("c"));
     testing.expectEqualSlices(u8, "ab", mrw.notRead());
 
     testing.expectEqualSlices(u8, "a", try mrw.read(buf2[0..]));
@@ -254,10 +254,10 @@ pub fn byte(reader: var) !u8 {
 
 test "read.byte" {
     var mr = MemReader{ .buffer = "abcd" };
-    testing.expectEqual(u8('a'), try read.byte(&mr));
-    testing.expectEqual(u8('b'), try read.byte(&mr));
-    testing.expectEqual(u8('c'), try read.byte(&mr));
-    testing.expectEqual(u8('d'), try read.byte(&mr));
+    testing.expectEqual(@as(u8, 'a'), try read.byte(&mr));
+    testing.expectEqual(@as(u8, 'b'), try read.byte(&mr));
+    testing.expectEqual(@as(u8, 'c'), try read.byte(&mr));
+    testing.expectEqual(@as(u8, 'd'), try read.byte(&mr));
     testing.expectError(error.EndOfStream, read.byte(&mr));
 }
 
@@ -272,7 +272,7 @@ pub fn until(reader: var, allocator: var, delim: u8) ![]u8 {
 
         res[i] = try read.byte(reader);
         if (res[i] == delim)
-            return mem.shrink(allocator, u8, res, i+1);
+            return mem.shrink(allocator, u8, res, i + 1);
     }
 }
 

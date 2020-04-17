@@ -9,7 +9,7 @@ const TypeInfo = builtin.TypeInfo;
 /// VTable is the vtables type. It has to be a struct, which has only function fields.
 ///  It is also required that VTable contains a definition of Impl, which should be an
 ///  OpaqueType. A pointer to this type denotes the 'self' parameter of each method.
-///  
+///
 /// Functions is a namespace with all the functions that should populate the vtable.
 ///  Functions can contain functions not in VTable. These will just be ignored.
 ///  When populate populates the VTable with the functions from Functions, it does
@@ -28,9 +28,9 @@ pub fn populate(comptime VTable: type, comptime Functions: type, comptime T: typ
 
             var res: VTable = undefined;
             inline for (@typeInfo(VTable).Struct.fields) |field| {
-                const Fn = @typeOf(@field(res, field.name));
+                const Fn = @TypeOf(@field(res, field.name));
                 const Expect = @typeInfo(Fn).Fn;
-                const Actual = @typeInfo(@typeOf(@field(Functions, field.name))).Fn;
+                const Actual = @typeInfo(@TypeOf(@field(Functions, field.name))).Fn;
                 debug.assert(!Expect.is_generic);
                 debug.assert(!Expect.is_var_args);
                 debug.assert(Expect.args.len > 0);
@@ -40,13 +40,11 @@ pub fn populate(comptime VTable: type, comptime Functions: type, comptime T: typ
                 debug.assert(Expect.return_type.? == Actual.return_type.?);
                 debug.assert(Expect.args.len == Actual.args.len);
 
-
                 for (Expect.args) |expect_arg, i| {
                     const actual_arg = Actual.args[i];
                     debug.assert(!expect_arg.is_generic);
                     debug.assert(expect_arg.is_generic == actual_arg.is_generic);
                     debug.assert(expect_arg.is_noalias == actual_arg.is_noalias);
-
 
                     // For the first arg. We enforce that it is a pointer, and
                     // that the actual function takes *T.

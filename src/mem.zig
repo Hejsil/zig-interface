@@ -9,7 +9,7 @@ const mem = @This();
 
 const TypeInfo = builtin.TypeInfo;
 
-pub const AllocError = error {OutOfMemory};
+pub const AllocError = error{OutOfMemory};
 
 pub const Allocator = struct {
     const VTable = struct {
@@ -46,7 +46,7 @@ pub const Allocator = struct {
     impl: *VTable.Impl,
 
     pub fn init(allocator: var) Allocator {
-        const T = @typeOf(allocator).Child;
+        const T = @TypeOf(allocator).Child;
         return Allocator{
             .vtable = comptime vtable.populate(VTable, T, T),
             .impl = @ptrCast(*VTable.Impl, allocator),
@@ -72,20 +72,20 @@ test "mem.Allocator" {
     const allocator = Allocator.init(&fba);
 
     var t = try mem.alloc(allocator, u8, 10);
-    testing.expectEqual(usize(10), t.len);
-    testing.expectEqual(usize(10), fba.end_index);
+    testing.expectEqual(@as(usize, 10), t.len);
+    testing.expectEqual(@as(usize, 10), fba.end_index);
 
     t = try mem.realloc(allocator, u8, t, 5);
-    testing.expectEqual(usize(5), t.len);
-    testing.expectEqual(usize(10), fba.end_index);
+    testing.expectEqual(@as(usize, 5), t.len);
+    testing.expectEqual(@as(usize, 10), fba.end_index);
 
     t = try mem.realloc(allocator, u8, t, 20);
-    testing.expectEqual(usize(20), t.len);
-    testing.expectEqual(usize(30), fba.end_index);
+    testing.expectEqual(@as(usize, 20), t.len);
+    testing.expectEqual(@as(usize, 30), fba.end_index);
 
     mem.free(allocator, t);
-    testing.expectEqual(usize(20), t.len);
-    testing.expectEqual(usize(30), fba.end_index);
+    testing.expectEqual(@as(usize, 20), t.len);
+    testing.expectEqual(@as(usize, 30), fba.end_index);
 }
 
 pub const FixedBufferAllocator = struct {
@@ -133,24 +133,24 @@ test "mem.FixedBufferAllocator" {
     var fba = FixedBufferAllocator{ .buffer = buf[0..] };
 
     var t = try fba.alloc(10, 1);
-    testing.expectEqual(usize(10), t.len);
-    testing.expectEqual(usize(10), fba.end_index);
+    testing.expectEqual(@as(usize, 10), t.len);
+    testing.expectEqual(@as(usize, 10), fba.end_index);
 
     t = try fba.realloc(t, 5, 1);
-    testing.expectEqual(usize(5), t.len);
-    testing.expectEqual(usize(10), fba.end_index);
+    testing.expectEqual(@as(usize, 5), t.len);
+    testing.expectEqual(@as(usize, 10), fba.end_index);
 
     t = try fba.realloc(t, 20, 1);
-    testing.expectEqual(usize(20), t.len);
-    testing.expectEqual(usize(30), fba.end_index);
+    testing.expectEqual(@as(usize, 20), t.len);
+    testing.expectEqual(@as(usize, 30), fba.end_index);
 
     fba.free(t);
-    testing.expectEqual(usize(20), t.len);
-    testing.expectEqual(usize(30), fba.end_index);
+    testing.expectEqual(@as(usize, 20), t.len);
+    testing.expectEqual(@as(usize, 30), fba.end_index);
 }
 
-pub fn create(allocator: var, init: var) AllocError!*@typeOf(init) {
-    const T = @typeOf(init);
+pub fn create(allocator: var, init: var) AllocError!*@TypeOf(init) {
+    const T = @TypeOf(init);
     if (@sizeOf(T) == 0)
         return &(T{});
 
@@ -163,8 +163,8 @@ test "mem.create" {
     var buf: [@sizeOf(u16)]u8 = undefined;
     var fba = FixedBufferAllocator{ .buffer = buf[0..] };
 
-    testing.expectEqual(u16(99), (try mem.create(&fba, u16(99))).*);
-    testing.expectError(AllocError.OutOfMemory, mem.create(&fba, u16(100)));
+    testing.expectEqual(@as(u16, 99), (try mem.create(&fba, @as(u16, 99))).*);
+    testing.expectError(AllocError.OutOfMemory, mem.create(&fba, @as(u16, 100)));
 }
 
 pub fn alloc(allocator: var, comptime T: type, n: usize) AllocError![]T {
@@ -176,13 +176,13 @@ test "mem.alloc" {
     var fba = FixedBufferAllocator{ .buffer = buf[0..] };
 
     const t = try mem.alloc(&fba, u16, 4);
-    testing.expectEqual(usize(4), t.len);
+    testing.expectEqual(@as(usize, 4), t.len);
     testing.expectError(AllocError.OutOfMemory, mem.alloc(&fba, u8, 1));
 }
 
 pub fn alignedAlloc(allocator: var, comptime T: type, comptime alignment: u29, n: usize) AllocError![]align(alignment) T {
     if (n == 0)
-        return ([*]align(alignment) T)(undefined)[0..0];
+        return &[_]T{};
 
     const byte_count = math.mul(usize, @sizeOf(T), n) catch return AllocError.OutOfMemory;
     const byte_slice = try allocator.alloc(byte_count, alignment);
@@ -192,7 +192,7 @@ pub fn alignedAlloc(allocator: var, comptime T: type, comptime alignment: u29, n
     for (byte_slice) |*byte|
         byte.* = undefined;
 
-    return @bytesToSlice(T, @alignCast(alignment, byte_slice));
+    return std.mem.bytesAsSlice(T, @alignCast(alignment, byte_slice));
 }
 
 pub fn realloc(allocator: var, comptime T: type, old_mem: []T, n: usize) AllocError![]T {
@@ -204,10 +204,10 @@ test "mem.realloc" {
     var fba = FixedBufferAllocator{ .buffer = buf[0..] };
 
     var t = try mem.alloc(&fba, u8, 4);
-    testing.expectEqual(usize(4), t.len);
+    testing.expectEqual(@as(usize, 4), t.len);
 
     t = try mem.realloc(&fba, u8, t, 2);
-    testing.expectEqual(usize(2), t.len);
+    testing.expectEqual(@as(usize, 2), t.len);
     testing.expectError(AllocError.OutOfMemory, mem.realloc(&fba, u8, t, 5));
 }
 
@@ -216,10 +216,10 @@ pub fn alignedRealloc(allocator: var, comptime T: type, comptime alignment: u29,
         return mem.alignedAlloc(allocator, T, alignment, n);
     if (n == 0) {
         mem.free(allocator, old_mem);
-        return ([*]align(alignment) T)(undefined)[0..0];
+        return &[_]T{};
     }
 
-    const old_byte_slice = @sliceToBytes(old_mem);
+    const old_byte_slice = std.mem.sliceAsBytes(old_mem);
     const byte_count = math.mul(usize, @sizeOf(T), n) catch return AllocError.OutOfMemory;
     const byte_slice = try allocator.realloc(old_byte_slice, byte_count, alignment);
     debug.assert(byte_slice.len == byte_count);
@@ -229,7 +229,7 @@ pub fn alignedRealloc(allocator: var, comptime T: type, comptime alignment: u29,
             byte.* = undefined;
     }
 
-    return @bytesToSlice(T, @alignCast(alignment, byte_slice));
+    return std.mem.bytesAsSlice(T, @alignCast(alignment, byte_slice));
 }
 
 /// Reallocate, but `n` must be less than or equal to `old_mem.len`.
@@ -244,10 +244,10 @@ test "mem.shrink" {
     var fba = FixedBufferAllocator{ .buffer = buf[0..] };
 
     var t = try mem.alloc(&fba, u16, 4);
-    testing.expectEqual(usize(4), t.len);
+    testing.expectEqual(@as(usize, 4), t.len);
 
     t = mem.shrink(&fba, u16, t, 2);
-    testing.expectEqual(usize(2), t.len);
+    testing.expectEqual(@as(usize, 2), t.len);
 }
 
 pub fn alignedShrink(allocator: var, comptime T: type, comptime alignment: u29, old_mem: []align(alignment) T, n: usize) []align(alignment) T {
@@ -262,13 +262,13 @@ pub fn alignedShrink(allocator: var, comptime T: type, comptime alignment: u29, 
     // n <= old_mem.len and the multiplication didn't overflow for that operation.
     const byte_count = @sizeOf(T) * n;
 
-    const byte_slice = allocator.realloc(@sliceToBytes(old_mem), byte_count, alignment) catch unreachable;
+    const byte_slice = allocator.realloc(std.mem.sliceAsBytes(old_mem), byte_count, alignment) catch unreachable;
     debug.assert(byte_slice.len == byte_count);
-    return @bytesToSlice(T, @alignCast(alignment, byte_slice));
+    return std.mem.bytesAsSlice(T, @alignCast(alignment, byte_slice));
 }
 
 pub fn free(allocator: var, memory: var) void {
-    const bytes = @sliceToBytes(memory);
+    const bytes = std.mem.sliceAsBytes(memory);
     if (bytes.len == 0)
         return;
 
@@ -281,6 +281,6 @@ test "mem.free" {
     var fba = FixedBufferAllocator{ .buffer = buf[0..] };
 
     var t = try mem.alloc(&fba, u16, 4);
-    testing.expectEqual(usize(4), t.len);
+    testing.expectEqual(@as(usize, 4), t.len);
     mem.free(&fba, t);
 }
