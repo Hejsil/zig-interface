@@ -1,5 +1,9 @@
 # 
 
+This repo is out of date. The current standard library no longer uses `@fieldParentPtr` interfaces for `Allocator` and `Random`, and basically uses what is proposed here.
+
+#
+
 The current "interface field" pattern in Zig has problems:
 
 * It's too easy to shoot yourself by copying the interface out of its implementation: [#591](https://github.com/ziglang/zig/issues/591).
